@@ -18,13 +18,36 @@ module EasyTable
         concat(content_tag(:thead) do
           thead
         end)
+        columns = node.each_leaf.map &:content
         concat(content_tag(:tbody) do
           @collection.each do |record|
-            concat(content_tag(:tr, tr_opts(record)) do
-              node.each_leaf do |leaf|
-                leaf.content.td(record)
+            columns.each { |c| c.prepare_to_render(record) }
+            rowspan = columns.max { |c| c.rowspan }.rowspan
+            if rowspan > 0
+
+              rowspan.times do |idx|
+                concat(content_tag(:tr, tr_opts(record)) do
+                  columns.each do |col|
+                    if col.rowspan == 0 && idx == 0
+                      col.append_opt(:rowspan, rowspan) if rowspan > 1 && col.rowspan == 0
+                      col.td(record)
+                    elsif col.rowspan > 0
+                      col.td_row(record, idx)
+                    end
+                  end
+                end)
               end
-            end)
+
+
+            else
+              concat(content_tag(:tr, tr_opts(record)) do
+                columns.each do |col|
+                  col.td(record)
+                end
+              end)
+            end
+
+            columns.each { |c| c.clear_rows }
           end
         end)
       end

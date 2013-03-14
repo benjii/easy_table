@@ -14,6 +14,7 @@ module EasyTable
           h[k[7..-1]] = v
           h
         end
+        @row_blocks = []
       end
 
       def head
@@ -27,6 +28,35 @@ module EasyTable
           html = record.send(@title).to_s
         end
         concat(content_tag(:td, html, html_opts(record)))
+      end
+
+      def td_row(record, idx)
+        block = @row_blocks[idx]
+        html = capture { block.call }
+        concat(content_tag(:td, html, html_opts(record)))
+      end
+
+      def row(&block)
+        @row_blocks << block
+      end
+
+      def rowspan
+        @row_blocks.size
+      end
+
+      def clear_rows
+        @row_blocks = []
+        @opts.delete :rowspan
+      end
+
+      def append_opt(k, v)
+        @opts[k] = v
+      end
+
+      def prepare_to_render(record)
+        if @block.present?
+          @block_capture = capture { @block.call(record, self) }
+        end
       end
 
       private
